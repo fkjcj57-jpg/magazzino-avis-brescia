@@ -27,6 +27,7 @@ const APP_SHELL = [
   "./js/bolla.js",
   "./js/cruscotto.js",
   "./js/ui.js",
+  "./js/importa.js",
   "./js/app.js"
 ];
 

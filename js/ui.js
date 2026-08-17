@@ -10,6 +10,7 @@ const VISTE_SOLO_RESPONSABILE = ["articoli", "categorie", "sezioni", "fornitori"
 function _aggiornaUI() {
   const loggato = !!window._stato.utente;
   document.getElementById("view-login").classList.toggle("attiva", !loggato);
+  document.getElementById("view-login").classList.toggle("nascosto", loggato);
   document.getElementById("app-shell").classList.toggle("nascosto", !loggato);
   if (!loggato) return;
 

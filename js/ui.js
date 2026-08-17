@@ -25,7 +25,7 @@ function _aggiornaUI() {
     btn.classList.toggle("attivo", vista === window._stato.vistaAttiva);
   });
 
-  document.querySelectorAll(".view").forEach((el) => el.classList.remove("attiva"));
+  document.querySelectorAll("#app-shell .view").forEach((el) => el.classList.remove("attiva"));
   const viewEl = document.getElementById(`view-${window._stato.vistaAttiva}`);
   if (viewEl) viewEl.classList.add("attiva");
 

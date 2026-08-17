@@ -1,0 +1,325 @@
+/* style.css — Magazzino AVIS Brescia
+   Layout: menu sinistro compatto e fisso, contenuto centrato e leggibile.
+   Font di sistema (nessun caricamento esterno: deve funzionare offline). */
+
+:root {
+  --rosso-avis: #c8102e;
+  --rosso-avis-scuro: #96001f;
+  --rosso-avis-chiaro: #fbe4e8;
+
+  --bg: #f7f5f2;
+  --superficie: #ffffff;
+  --superficie-2: #f1efe9;
+  --bordo: #e2ddd3;
+  --bordo-forte: #cfc8ba;
+
+  --testo: #23211d;
+  --testo-secondario: #6b665c;
+  --testo-muto: #a39c8c;
+
+  --verde: #2f7d4f;
+  --verde-bg: #e7f3ec;
+  --ambra: #b5760a;
+  --ambra-bg: #fbf0dc;
+  --rosso-alert: #b3261e;
+  --rosso-alert-bg: #fbe6e4;
+  --grigio-bg: #eceae5;
+
+  --radius: 10px;
+  --radius-sm: 6px;
+  --ombra: 0 1px 2px rgba(35, 33, 29, 0.06), 0 1px 8px rgba(35, 33, 29, 0.04);
+
+  --larghezza-sidebar: 200px;
+  --larghezza-contenuto: 760px;
+
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--testo);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  padding-bottom: 72px; /* spazio per la nav inferiore su mobile */
+  min-height: 100vh;
+}
+
+h1, h2, h3 { margin: 0 0 .5rem; font-weight: 600; letter-spacing: -0.01em; }
+h1 { font-size: 1.4rem; }
+h2 { font-size: 1.1rem; }
+h3 { font-size: .95rem; color: var(--testo-secondario); text-transform: uppercase; letter-spacing: .04em; }
+p { margin: 0 0 .75rem; }
+
+a { color: var(--rosso-avis); text-decoration: none; }
+
+button, input, select, textarea { font-family: inherit; font-size: 1rem; }
+
+/* IMPORTANTE: nasconde davvero gli elementi con .nascosto, inclusa la
+   schermata di login dopo l'accesso e le voci non permesse. */
+.nascosto { display: none !important; }
+
+/* --- Header --- */
+#app-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--rosso-avis);
+  color: #fff;
+}
+#app-header .brand { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+#app-header .brand i { font-size: 20px; }
+#app-header .utente { font-size: .8rem; opacity: .95; display: flex; align-items: center; gap: 6px; }
+#app-header .utente button { color: #fff; }
+#app-header button.icon-btn { color: #fff; }
+
+/* --- Contenuto: centrato in una colonna leggibile --- */
+.view { display: none; }
+.view.attiva { display: block; }
+
+/* --- Navigazione inferiore (solo mobile) --- */
+#app-nav {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 20;
+  display: flex;
+  overflow-x: auto;
+  background: var(--superficie);
+  border-top: 1px solid var(--bordo);
+  padding: 4px 4px calc(4px + env(safe-area-inset-bottom));
+}
+#app-nav button {
+  flex: 0 0 auto;
+  min-width: 64px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background: none;
+  border: none;
+  padding: 8px 6px;
+  color: var(--testo-secondario);
+  font-size: .66rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+#app-nav button i { font-size: 20px; }
+#app-nav button.attivo { color: var(--rosso-avis); }
+#app-nav button[hidden] { display: none; }
+
+/* Sidebar desktop nascosta su mobile */
+#app-sidebar { display: none; }
+
+/* --- Card generiche --- */
+.card {
+  background: var(--superficie);
+  border: 1px solid var(--bordo);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: var(--ombra);
+}
+
+.griglia-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.griglia-metriche { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 16px; }
+
+.metrica { background: var(--superficie-2); border-radius: var(--radius); padding: 12px 14px; }
+.metrica .valore { font-size: 1.4rem; font-weight: 600; }
+.metrica .etichetta { font-size: .75rem; color: var(--testo-secondario); }
+
+/* --- Badge di stato --- */
+.badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 9px; border-radius: 99px; font-size: .72rem; font-weight: 600; }
+.badge-attesa { background: var(--ambra-bg); color: var(--ambra); }
+.badge-evasa { background: var(--verde-bg); color: var(--verde); }
+.badge-parziale { background: var(--ambra-bg); color: var(--ambra); }
+.badge-annullata { background: var(--grigio-bg); color: var(--testo-secondario); }
+.badge-omaggio { background: var(--rosso-avis-chiaro); color: var(--rosso-avis-scuro); }
+.badge-alert { background: var(--rosso-alert-bg); color: var(--rosso-alert); }
+
+/* --- Liste --- */
+.lista-riga {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 4px;
+  border-bottom: 1px solid var(--bordo);
+}
+.lista-riga:last-child { border-bottom: none; }
+.lista-riga .titolo { font-weight: 500; }
+.lista-riga .sottotitolo { font-size: .8rem; color: var(--testo-secondario); }
+.lista-riga.alert { background: var(--rosso-alert-bg); border-radius: var(--radius-sm); padding: 12px 10px; }
+
+/* --- Form: email e password identici --- */
+label { display: block; font-size: .8rem; color: var(--testo-secondario); margin: 12px 0 4px; }
+label:first-child { margin-top: 0; }
+input[type=text], input[type=number], input[type=email], input[type=tel],
+input[type=password], input[type=date], select, textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--bordo-forte);
+  border-radius: var(--radius-sm);
+  background: var(--superficie);
+  color: var(--testo);
+  font-size: 1rem;
+  line-height: 1.4;
+  -webkit-appearance: none;
+  appearance: none;
+}
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--rosso-avis);
+  box-shadow: 0 0 0 3px var(--rosso-avis-chiaro);
+}
+textarea { resize: vertical; min-height: 70px; }
+
+.campo-help { font-size: .72rem; color: var(--testo-muto); margin-top: 3px; }
+
+/* --- Pulsanti --- */
+button.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--bordo-forte);
+  background: var(--superficie);
+  color: var(--testo);
+  font-weight: 500;
+  cursor: pointer;
+}
+button.btn:active { transform: scale(.98); }
+button.btn-primario { background: var(--rosso-avis); border-color: var(--rosso-avis); color: #fff; }
+button.btn-primario:hover { background: var(--rosso-avis-scuro); }
+button.btn-testo { border: none; background: none; color: var(--rosso-avis); padding: 6px 8px; }
+button.btn-blocco { width: 100%; }
+button.icon-btn { background: none; border: none; padding: 6px; border-radius: 99px; color: var(--testo-secondario); cursor: pointer; }
+
+/* --- Avvisi inline --- */
+.avviso {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  font-size: .85rem;
+  margin-bottom: 12px;
+}
+.avviso-ambra { background: var(--ambra-bg); color: var(--ambra); }
+.avviso-rosso { background: var(--rosso-alert-bg); color: var(--rosso-alert); }
+.avviso i { font-size: 18px; flex-shrink: 0; }
+
+/* --- Tabelle compatte --- */
+table.tabella-dati { width: 100%; border-collapse: collapse; font-size: .85rem; }
+table.tabella-dati th {
+  text-align: left;
+  font-size: .7rem;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  color: var(--testo-secondario);
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--bordo-forte);
+}
+table.tabella-dati td { padding: 8px; border-bottom: 1px solid var(--bordo); }
+
+/* --- Login: schermata centrata, sparisce del tutto dopo l'accesso --- */
+#view-login {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 16px;
+}
+#view-login .card { width: 100%; max-width: 380px; }
+#view-login .logo-login { text-align: center; margin-bottom: 8px; color: var(--rosso-avis); font-size: 2.4rem; }
+
+/* --- Stato vuoto --- */
+.stato-vuoto { text-align: center; padding: 32px 16px; color: var(--testo-secondario); }
+.stato-vuoto i { font-size: 32px; margin-bottom: 8px; display: block; color: var(--testo-muto); }
+
+/* --- Utility --- */
+.flex-tra { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.mt-0 { margin-top: 0; }
+.spinner { width: 20px; height: 20px; border: 2px solid var(--bordo-forte); border-top-color: var(--rosso-avis); border-radius: 50%; animation: girare .7s linear infinite; }
+@keyframes girare { to { transform: rotate(360deg); } }
+
+/* ===================================================================
+   LAYOUT DESKTOP: menu sinistro compatto e fisso + contenuto centrato
+   =================================================================== */
+@media (min-width: 760px) {
+  body { padding-bottom: 0; }
+
+  #app-nav { display: none !important; }
+
+  /* La shell diventa: [sidebar fissa] [area contenuto che riempie il resto] */
+  #app-shell {
+    display: block;
+  }
+
+  #app-header {
+    padding-left: calc(var(--larghezza-sidebar) + 24px);
+  }
+
+  #app-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: var(--larghezza-sidebar);
+    background: var(--superficie);
+    border-right: 1px solid var(--bordo);
+    padding: 16px 10px;
+    overflow-y: auto;
+    z-index: 30;
+  }
+  #app-sidebar .sidebar-logo {
+    display: flex; align-items: center; gap: 8px;
+    font-weight: 600; color: var(--rosso-avis);
+    padding: 4px 10px 14px; font-size: .95rem;
+  }
+  #app-sidebar .sidebar-logo i { font-size: 20px; }
+  #app-sidebar button {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px; border-radius: var(--radius-sm);
+    background: none; border: none; text-align: left;
+    color: var(--testo-secondario); font-weight: 500; font-size: .88rem;
+    cursor: pointer; width: 100%;
+  }
+  #app-sidebar button:hover { background: var(--superficie-2); }
+  #app-sidebar button.attivo { background: var(--rosso-avis-chiaro); color: var(--rosso-avis-scuro); }
+  #app-sidebar button i { font-size: 18px; flex-shrink: 0; }
+  #app-sidebar button[hidden] { display: none; }
+
+  /* L'area a destra della sidebar: il contenuto è centrato in una colonna. */
+  #app-shell > div,
+  #app-content-wrap {
+    margin-left: var(--larghezza-sidebar);
+  }
+
+  main {
+    max-width: var(--larghezza-contenuto);
+    margin: 0 auto;
+    padding: 24px 24px 48px;
+  }
+}
+
+/* Su mobile il logo nella sidebar non serve (c'è nell'header) */
+@media (max-width: 759px) {
+  #app-sidebar .sidebar-logo { display: none; }
+}

@@ -10,7 +10,6 @@ const VISTE_SOLO_RESPONSABILE = ["articoli", "categorie", "sezioni", "fornitori"
 function _aggiornaUI() {
   const loggato = !!window._stato.utente;
   document.getElementById("view-login").classList.toggle("attiva", !loggato);
-  document.getElementById("view-login").classList.toggle("nascosto", loggato);
   document.getElementById("app-shell").classList.toggle("nascosto", !loggato);
   if (!loggato) return;
 
@@ -25,7 +24,7 @@ function _aggiornaUI() {
     btn.classList.toggle("attivo", vista === window._stato.vistaAttiva);
   });
 
-  document.querySelectorAll("#app-shell .view").forEach((el) => el.classList.remove("attiva"));
+  document.querySelectorAll(".view").forEach((el) => el.classList.remove("attiva"));
   const viewEl = document.getElementById(`view-${window._stato.vistaAttiva}`);
   if (viewEl) viewEl.classList.add("attiva");
 
@@ -644,11 +643,73 @@ async function eliminaMovimento(id) {
 async function renderExport() {
   const el = document.getElementById("view-export");
   el.innerHTML = `
-    <h1>Backup dati</h1>
+    <h1>Backup e import dati</h1>
+
+    <h3>Backup</h3>
     <div class="card">
       <p>Esporta un file JSON completo (articoli, movimenti, richieste, sezioni, fornitori) come backup mensile, secondo lo standard AVIS.</p>
       <button class="btn btn-primario" onclick="esportaBackup()"><i class="ti ti-download"></i>Esporta backup JSON</button>
+    </div>
+
+    <h3>Import da Excel</h3>
+    <div class="card">
+      <p style="margin-bottom:4px"><strong>Sezioni</strong></p>
+      <p class="campo-help" style="margin-bottom:8px">File .xlsx con colonne: nome, email, telefono, referente. Solo il nome è obbligatorio.</p>
+      <input type="file" id="imp-sezioni-file" accept=".xlsx" onchange="anteprimaImport('sezioni')">
+      <div id="imp-sezioni-esito" style="margin-top:10px"></div>
+    </div>
+    <div class="card">
+      <p style="margin-bottom:4px"><strong>Articoli</strong></p>
+      <p class="campo-help" style="margin-bottom:8px">File .xlsx con colonne: codice, descrizione, categoria, prefisso, soglia_minima, incide_su_valore. Codice e descrizione obbligatori. Le categorie mancanti vengono create automaticamente.</p>
+      <input type="file" id="imp-articoli-file" accept=".xlsx" onchange="anteprimaImport('articoli')">
+      <div id="imp-articoli-esito" style="margin-top:10px"></div>
     </div>`;
+}
+
+// Tiene in memoria le righe analizzate in attesa di conferma.
+window.__importPending = { sezioni: null, articoli: null };
+
+async function anteprimaImport(tipo) {
+  const file = document.getElementById(`imp-${tipo}-file`).files[0];
+  const box = document.getElementById(`imp-${tipo}-esito`);
+  if (!file) { box.innerHTML = ""; return; }
+  box.innerHTML = '<span class="spinner" style="display:inline-block"></span> Analisi del file...';
+  try {
+    const { valide, errori } = tipo === "sezioni"
+      ? await window._importa.analizzaSezioni(file)
+      : await window._importa.analizzaArticoli(file);
+    window.__importPending[tipo] = valide;
+
+    const avvisi = errori.length
+      ? `<div class="avviso avviso-ambra" style="margin-top:8px"><i class="ti ti-alert-triangle"></i><div>${errori.join("<br>")}</div></div>`
+      : "";
+
+    box.innerHTML = valide.length
+      ? `<p>Pronte per l'import: <strong>${valide.length}</strong> ${tipo}.</p>${avvisi}
+         <button class="btn btn-primario" onclick="confermaImport('${tipo}')"><i class="ti ti-upload"></i>Importa ${valide.length} ${tipo}</button>`
+      : `<div class="avviso avviso-rosso"><i class="ti ti-x"></i><div>Nessuna riga valida trovata nel file.</div></div>${avvisi}`;
+  } catch (e) {
+    box.innerHTML = `<div class="avviso avviso-rosso"><i class="ti ti-x"></i><div>${e.message}</div></div>`;
+  }
+}
+
+async function confermaImport(tipo) {
+  const righe = window.__importPending[tipo];
+  if (!righe || !righe.length) return;
+  const box = document.getElementById(`imp-${tipo}-esito`);
+  box.innerHTML = '<span class="spinner" style="display:inline-block"></span> Import in corso...';
+  try {
+    if (tipo === "sezioni") {
+      const { creati, aggiornati } = await window._importa.importaSezioni(righe);
+      box.innerHTML = `<div class="avviso" style="background:var(--verde-bg);color:var(--verde)"><i class="ti ti-check"></i><div>Import completato: ${creati} nuove, ${aggiornati} aggiornate.</div></div>`;
+    } else {
+      const { creati, aggiornati, categorieCreate } = await window._importa.importaArticoli(righe);
+      box.innerHTML = `<div class="avviso" style="background:var(--verde-bg);color:var(--verde)"><i class="ti ti-check"></i><div>Import completato: ${creati} nuovi, ${aggiornati} aggiornati${categorieCreate ? `, ${categorieCreate} categorie create` : ""}.</div></div>`;
+    }
+    window.__importPending[tipo] = null;
+  } catch (e) {
+    box.innerHTML = `<div class="avviso avviso-rosso"><i class="ti ti-x"></i><div>Errore durante l'import: ${e.message}</div></div>`;
+  }
 }
 
 async function esportaBackup() {
@@ -690,4 +751,5 @@ Object.assign(window, {
   apriNuovoFornitore, salvaNuovoFornitore,
   apriNuovoUtente, salvaNuovoUtente, rimuoviAccessoUtente, salvaCambioPassword, richiediReset,
   eliminaMovimento, esportaBackup,
+  anteprimaImport, confermaImport,
 });

@@ -14,7 +14,7 @@ let unsubscribers = [];
 
 const COLLEZIONI = [
   { nome: "categorie", tabella: "categorie", chiave: "id" },
-  { nome: "articoli", tabella: "articoli", chiave: "id" },
+  { nome: "articoli", tabella: "articoli", chiave: "codice" },
   { nome: "movimenti", tabella: "movimenti", chiave: "id" },
   { nome: "richieste", tabella: "richieste", chiave: "id" },
   { nome: "sezioni", tabella: "sezioni", chiave: "id" },

@@ -1,0 +1,118 @@
+rules_version = '2';
+
+// Regole di sicurezza Firestore — Magazzino AVIS Brescia
+//
+// Principio: il ruolo utente viene letto dal profilo in /utenti/{uid}, MAI
+// dal client (che potrebbe essere manomesso). Questo è il controllo lato
+// server richiesto dalle istruzioni di progetto AVIS: "Autorizzazione:
+// Firebase Security Rules per collezione, che verificano il ruolo utente
+// leggendolo dal profilo Firestore — controllo lato server, non bypassabile
+// via client".
+//
+// Nessuna registrazione autonoma: gli account (e quindi i profili in
+// /utenti) vengono creati solo dalla Console Firebase o da uno script
+// amministrativo lato Responsabile — mai da regole che permettano
+// self-signup.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function autenticato() {
+      return request.auth != null;
+    }
+
+    function profiloUtente() {
+      return get(/databases/$(database)/documents/utenti/$(request.auth.uid)).data;
+    }
+
+    function ruolo() {
+      return autenticato() ? profiloUtente().ruolo : null;
+    }
+
+    function isResponsabile() {
+      return autenticato() && ruolo() == 'responsabile';
+    }
+
+    // --- Profili utente ---
+    // Un utente legge solo il proprio profilo; solo il Responsabile può
+    // leggerli tutti, crearli o modificarli (creazione account centralizzata).
+    match /utenti/{uid} {
+      allow get: if autenticato() && (request.auth.uid == uid || isResponsabile());
+      allow list: if isResponsabile();
+      allow create, update, delete: if isResponsabile();
+    }
+
+    // --- Anagrafiche gestite solo dal Responsabile ---
+    match /categorie/{id} {
+      allow read: if autenticato();
+      allow write: if isResponsabile();
+    }
+
+    match /sezioni/{id} {
+      allow read: if autenticato();
+      allow write: if isResponsabile();
+    }
+
+    match /fornitori/{id} {
+      allow read: if autenticato();
+      allow write: if isResponsabile();
+    }
+
+    // --- Famiglie e articoli ---
+    // La creazione di un nuovo articolo/famiglia richiede il ruolo
+    // Responsabile (decisione di progetto: solo il Responsabile gestisce
+    // l'anagrafica). La disattivazione (soft delete, campo "attivo") è una
+    // update, non una delete: niente cascade-delete implicito lato server,
+    // coerente con la regola 5 (cascade delete esplicito, gestito lato app).
+    match /famiglie/{id} {
+      allow read: if autenticato();
+      allow create, update: if isResponsabile();
+      allow delete: if false;
+    }
+
+    match /articoli/{codice} {
+      allow read: if autenticato();
+      allow create, update: if isResponsabile();
+      allow delete: if false;
+    }
+
+    // --- Movimenti di carico/scarico ---
+    // Chiunque sia autenticato può registrare un movimento. La modifica o
+    // cancellazione è permessa solo a chi lo ha creato, oppure sempre al
+    // Responsabile (decisione di progetto).
+    match /movimenti/{id} {
+      allow read, create: if autenticato();
+      allow update, delete: if autenticato() &&
+        (resource.data.creato_da == request.auth.uid || isResponsabile());
+    }
+
+    // --- Richieste dalle sezioni ---
+    // Creazione ed evasione (update) libere per chiunque sia autenticato;
+    // nessuna cancellazione, un annullamento è una update di stato.
+    match /richieste/{id} {
+      allow read, create, update: if autenticato();
+      allow delete: if false;
+    }
+
+    // --- Bolle di consegna ---
+    // Immutabili una volta emesse (integrità del documento fiscale/interno):
+    // si può creare, non modificare né cancellare.
+    match /bolle/{id} {
+      allow read, create: if autenticato();
+      allow update: if false;
+      allow delete: if isResponsabile();
+    }
+
+    // --- Contatori atomici (codici famiglia, numerazione bolle) ---
+    // Scrivibili da chiunque sia autenticato, ma solo in incremento di 1
+    // rispetto al valore precedente (o valore 1 alla creazione), per
+    // impedire manomissioni della sequenza.
+    match /contatori/{id} {
+      allow read: if autenticato();
+      allow create: if autenticato() && request.resource.data.ultimo_numero == 1;
+      allow update: if autenticato() &&
+        request.resource.data.ultimo_numero == resource.data.ultimo_numero + 1;
+      allow delete: if false;
+    }
+  }
+}

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Magazzino AVIS Brescia</title>
+<meta name="theme-color" content="#c8102e">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+<link rel="stylesheet" href="./css/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.47.0/iconfont/tabler-icons.min.css">
+
+<!-- Librerie esterne (caricate da CDN, messe in cache offline dal service worker dopo il primo utilizzo — vedi sw.js) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dexie/4.0.8/dexie.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body>
+
+<!-- ================= LOGIN ================= -->
+<div id="view-login" class="view">
+  <div class="card">
+    <div class="logo-login"><i class="ti ti-droplet-filled"></i></div>
+    <h1 style="text-align:center">Magazzino AVIS Brescia</h1>
+    <p style="text-align:center;color:var(--testo-secondario);font-size:.85rem">Accedi con l'account fornito dal Responsabile</p>
+    <form id="login-form">
+      <label for="login-email">Email</label>
+      <input type="email" id="login-email" required autocomplete="username">
+      <label for="login-password">Password</label>
+      <input type="password" id="login-password" required autocomplete="current-password">
+      <p id="login-errore" style="color:var(--rosso-alert);font-size:.8rem;min-height:1.2em"></p>
+      <button type="submit" id="login-submit" class="btn btn-primario btn-blocco" style="margin-top:8px">Accedi</button>
+      <button type="button" class="btn btn-testo btn-blocco" onclick="richiediReset()" style="margin-top:4px">Password dimenticata?</button>
+    </form>
+  </div>
+</div>
+
+<!-- ================= APP (dopo login) ================= -->
+<div id="app-shell" class="nascosto">
+
+  <header id="app-header">
+    <div class="brand"><i class="ti ti-droplet-filled"></i>Magazzino AVIS</div>
+    <div class="utente">
+      <button class="icon-btn" style="color:#fff" onclick="cambiaVista('account')" aria-label="Il mio account">
+        <span id="utente-nome"></span> · <span id="utente-ruolo"></span>
+      </button>
+      <button id="btn-logout" class="icon-btn" aria-label="Esci"><i class="ti ti-logout"></i></button>
+    </div>
+  </header>
+
+  <!-- Sidebar desktop -->
+  <nav id="app-sidebar">
+    <button data-vista="cruscotto"><i class="ti ti-layout-dashboard"></i>Cruscotto</button>
+    <button data-vista="richieste"><i class="ti ti-clipboard-list"></i>Richieste</button>
+    <button data-vista="movimento"><i class="ti ti-transfer"></i>Nuovo movimento</button>
+    <button data-vista="storico"><i class="ti ti-history"></i>Storico</button>
+    <button data-vista="articoli"><i class="ti ti-package"></i>Articoli</button>
+    <button data-vista="categorie"><i class="ti ti-tags"></i>Categorie</button>
+    <button data-vista="sezioni"><i class="ti ti-building-community"></i>Sezioni</button>
+    <button data-vista="fornitori"><i class="ti ti-truck-delivery"></i>Fornitori</button>
+    <button data-vista="utenti"><i class="ti ti-users"></i>Utenti</button>
+    <button data-vista="export"><i class="ti ti-download"></i>Backup</button>
+  </nav>
+
+  <div>
+    <main>
+      <div id="view-cruscotto" class="view"></div>
+      <div id="view-richieste" class="view"></div>
+      <div id="view-movimento" class="view"></div>
+      <div id="view-storico" class="view"></div>
+      <div id="view-articoli" class="view"></div>
+      <div id="view-categorie" class="view"></div>
+      <div id="view-sezioni" class="view"></div>
+      <div id="view-fornitori" class="view"></div>
+      <div id="view-utenti" class="view"></div>
+      <div id="view-account" class="view"></div>
+      <div id="view-export" class="view"></div>
+    </main>
+
+    <!-- Nav inferiore mobile -->
+    <nav id="app-nav">
+      <button data-vista="cruscotto"><i class="ti ti-layout-dashboard"></i>Cruscotto</button>
+      <button data-vista="richieste"><i class="ti ti-clipboard-list"></i>Richieste</button>
+      <button data-vista="movimento"><i class="ti ti-transfer"></i>Movimento</button>
+      <button data-vista="storico"><i class="ti ti-history"></i>Storico</button>
+      <button data-vista="articoli"><i class="ti ti-package"></i>Articoli</button>
+      <button data-vista="categorie"><i class="ti ti-tags"></i>Categorie</button>
+      <button data-vista="sezioni"><i class="ti ti-building-community"></i>Sezioni</button>
+      <button data-vista="fornitori"><i class="ti ti-truck-delivery"></i>Fornitori</button>
+      <button data-vista="utenti"><i class="ti ti-users"></i>Utenti</button>
+      <button data-vista="export"><i class="ti ti-download"></i>Backup</button>
+    </nav>
+  </div>
+</div>
+
+<!-- Moduli dell'app, in ordine: tutti type="module" perché l'esecuzione dei
+     moduli è sempre differita e in ordine di documento, garantendo che ogni
+     window._X sia pronto prima che app.js (l'ultimo) lo usi. -->
+<script type="module" src="./js/db.js"></script>
+<script type="module" src="./js/firebase-init.js"></script>
+<script type="module" src="./js/contatori.js"></script>
+<script type="module" src="./js/categorie.js"></script>
+<script type="module" src="./js/articoli.js"></script>
+<script type="module" src="./js/movimenti.js"></script>
+<script type="module" src="./js/richieste.js"></script>
+<script type="module" src="./js/sezioni.js"></script>
+<script type="module" src="./js/fornitori.js"></script>
+<script type="module" src="./js/utenti.js"></script>
+<script type="module" src="./js/bolla.js"></script>
+<script type="module" src="./js/sync.js"></script>
+<script type="module" src="./js/auth.js"></script>
+<script type="module" src="./js/cruscotto.js"></script>
+<script type="module" src="./js/ui.js"></script>
+<script type="module" src="./js/app.js"></script>
+</body>
+</html>

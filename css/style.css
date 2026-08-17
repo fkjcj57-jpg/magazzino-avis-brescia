@@ -1,5 +1,5 @@
 /* style.css — Magazzino AVIS Brescia
-   Palette: rosso AVIS come accento, neutri caldi per il resto.
+   Layout: menu sinistro compatto e fisso, contenuto centrato e leggibile.
    Font di sistema (nessun caricamento esterno: deve funzionare offline). */
 
 :root {
@@ -28,6 +28,9 @@
   --radius: 10px;
   --radius-sm: 6px;
   --ombra: 0 1px 2px rgba(35, 33, 29, 0.06), 0 1px 8px rgba(35, 33, 29, 0.04);
+
+  --larghezza-sidebar: 200px;
+  --larghezza-contenuto: 760px;
 
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
@@ -59,6 +62,10 @@ a { color: var(--rosso-avis); text-decoration: none; }
 
 button, input, select, textarea { font-family: inherit; font-size: 1rem; }
 
+/* IMPORTANTE: nasconde davvero gli elementi con .nascosto, inclusa la
+   schermata di login dopo l'accesso e le voci non permesse. */
+.nascosto { display: none !important; }
+
 /* --- Header --- */
 #app-header {
   position: sticky;
@@ -74,45 +81,46 @@ button, input, select, textarea { font-family: inherit; font-size: 1rem; }
 }
 #app-header .brand { display: flex; align-items: center; gap: 8px; font-weight: 600; }
 #app-header .brand i { font-size: 20px; }
-#app-header .utente { font-size: .8rem; opacity: .9; display: flex; align-items: center; gap: 6px; }
+#app-header .utente { font-size: .8rem; opacity: .95; display: flex; align-items: center; gap: 6px; }
+#app-header .utente button { color: #fff; }
 #app-header button.icon-btn { color: #fff; }
 
-/* --- Contenuto --- */
-main {
-  max-width: 720px;
-  margin: 0 auto;
-  padding: 16px;
-}
-
+/* --- Contenuto: centrato in una colonna leggibile --- */
 .view { display: none; }
 .view.attiva { display: block; }
 
-/* --- Navigazione inferiore (mobile-first) --- */
+/* --- Navigazione inferiore (solo mobile) --- */
 #app-nav {
   position: fixed;
   bottom: 0; left: 0; right: 0;
   z-index: 20;
   display: flex;
+  overflow-x: auto;
   background: var(--superficie);
   border-top: 1px solid var(--bordo);
   padding: 4px 4px calc(4px + env(safe-area-inset-bottom));
 }
 #app-nav button {
-  flex: 1;
+  flex: 0 0 auto;
+  min-width: 64px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 2px;
   background: none;
   border: none;
-  padding: 8px 2px;
+  padding: 8px 6px;
   color: var(--testo-secondario);
-  font-size: .68rem;
+  font-size: .66rem;
   border-radius: var(--radius-sm);
+  cursor: pointer;
 }
 #app-nav button i { font-size: 20px; }
 #app-nav button.attivo { color: var(--rosso-avis); }
 #app-nav button[hidden] { display: none; }
+
+/* Sidebar desktop nascosta su mobile */
+#app-sidebar { display: none; }
 
 /* --- Card generiche --- */
 .card {
@@ -125,7 +133,7 @@ main {
 }
 
 .griglia-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.griglia-metriche { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 16px; }
+.griglia-metriche { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 16px; }
 
 .metrica { background: var(--superficie-2); border-radius: var(--radius); padding: 12px 14px; }
 .metrica .valore { font-size: 1.4rem; font-weight: 600; }
@@ -152,19 +160,23 @@ main {
 .lista-riga:last-child { border-bottom: none; }
 .lista-riga .titolo { font-weight: 500; }
 .lista-riga .sottotitolo { font-size: .8rem; color: var(--testo-secondario); }
-.lista-riga.alert { background: var(--rosso-alert-bg); border-radius: var(--radius-sm); }
+.lista-riga.alert { background: var(--rosso-alert-bg); border-radius: var(--radius-sm); padding: 12px 10px; }
 
-/* --- Form --- */
+/* --- Form: email e password identici --- */
 label { display: block; font-size: .8rem; color: var(--testo-secondario); margin: 12px 0 4px; }
 label:first-child { margin-top: 0; }
 input[type=text], input[type=number], input[type=email], input[type=tel],
-input[type=date], select, textarea {
+input[type=password], input[type=date], select, textarea {
   width: 100%;
   padding: 10px 12px;
   border: 1px solid var(--bordo-forte);
   border-radius: var(--radius-sm);
   background: var(--superficie);
   color: var(--testo);
+  font-size: 1rem;
+  line-height: 1.4;
+  -webkit-appearance: none;
+  appearance: none;
 }
 input:focus, select:focus, textarea:focus {
   outline: none;
@@ -210,7 +222,7 @@ button.icon-btn { background: none; border: none; padding: 6px; border-radius: 9
 .avviso-rosso { background: var(--rosso-alert-bg); color: var(--rosso-alert); }
 .avviso i { font-size: 18px; flex-shrink: 0; }
 
-/* --- Tabelle compatte (storico, anagrafica) --- */
+/* --- Tabelle compatte --- */
 table.tabella-dati { width: 100%; border-collapse: collapse; font-size: .85rem; }
 table.tabella-dati th {
   text-align: left;
@@ -223,10 +235,16 @@ table.tabella-dati th {
 }
 table.tabella-dati td { padding: 8px; border-bottom: 1px solid var(--bordo); }
 
-/* --- Login --- */
-#view-login { display: flex; align-items: center; justify-content: center; min-height: 80vh; }
-#view-login .card { width: 100%; max-width: 360px; }
-#view-login .logo-login { text-align: center; margin-bottom: 8px; color: var(--rosso-avis); font-size: 2rem; }
+/* --- Login: schermata centrata, sparisce del tutto dopo l'accesso --- */
+#view-login {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 16px;
+}
+#view-login .card { width: 100%; max-width: 380px; }
+#view-login .logo-login { text-align: center; margin-bottom: 8px; color: var(--rosso-avis); font-size: 2.4rem; }
 
 /* --- Stato vuoto --- */
 .stato-vuoto { text-align: center; padding: 32px 16px; color: var(--testo-secondario); }
@@ -235,27 +253,73 @@ table.tabella-dati td { padding: 8px; border-bottom: 1px solid var(--bordo); }
 /* --- Utility --- */
 .flex-tra { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .mt-0 { margin-top: 0; }
-.solo-responsabile { }
-.nascosto { display: none !important; }
 .spinner { width: 20px; height: 20px; border: 2px solid var(--bordo-forte); border-top-color: var(--rosso-avis); border-radius: 50%; animation: girare .7s linear infinite; }
 @keyframes girare { to { transform: rotate(360deg); } }
 
+/* ===================================================================
+   LAYOUT DESKTOP: menu sinistro compatto e fisso + contenuto centrato
+   =================================================================== */
 @media (min-width: 760px) {
-  #app-nav { display: none; }
   body { padding-bottom: 0; }
-  #app-shell { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
-  #app-sidebar {
-    display: flex; flex-direction: column; gap: 4px;
-    background: var(--superficie); border-right: 1px solid var(--bordo);
-    padding: 16px 12px;
+
+  #app-nav { display: none !important; }
+
+  /* La shell diventa: [sidebar fissa] [area contenuto che riempie il resto] */
+  #app-shell {
+    display: block;
   }
+
+  #app-header {
+    padding-left: calc(var(--larghezza-sidebar) + 24px);
+  }
+
+  #app-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: var(--larghezza-sidebar);
+    background: var(--superficie);
+    border-right: 1px solid var(--bordo);
+    padding: 16px 10px;
+    overflow-y: auto;
+    z-index: 30;
+  }
+  #app-sidebar .sidebar-logo {
+    display: flex; align-items: center; gap: 8px;
+    font-weight: 600; color: var(--rosso-avis);
+    padding: 4px 10px 14px; font-size: .95rem;
+  }
+  #app-sidebar .sidebar-logo i { font-size: 20px; }
   #app-sidebar button {
     display: flex; align-items: center; gap: 10px;
-    padding: 10px 12px; border-radius: var(--radius-sm);
+    padding: 9px 12px; border-radius: var(--radius-sm);
     background: none; border: none; text-align: left;
-    color: var(--testo-secondario); font-weight: 500;
+    color: var(--testo-secondario); font-weight: 500; font-size: .88rem;
+    cursor: pointer; width: 100%;
   }
+  #app-sidebar button:hover { background: var(--superficie-2); }
   #app-sidebar button.attivo { background: var(--rosso-avis-chiaro); color: var(--rosso-avis-scuro); }
-  #app-sidebar button i { font-size: 18px; }
-  #app-nav { display: none !important; }
+  #app-sidebar button i { font-size: 18px; flex-shrink: 0; }
+  #app-sidebar button[hidden] { display: none; }
+
+  /* L'area a destra della sidebar: il contenuto è centrato in una colonna. */
+  #app-shell > div,
+  #app-content-wrap {
+    margin-left: var(--larghezza-sidebar);
+  }
+
+  main {
+    max-width: var(--larghezza-contenuto);
+    margin: 0 auto;
+    padding: 24px 24px 48px;
+  }
+}
+
+/* Su mobile il logo nella sidebar non serve (c'è nell'header) */
+@media (max-width: 759px) {
+  #app-sidebar .sidebar-logo { display: none; }
 }

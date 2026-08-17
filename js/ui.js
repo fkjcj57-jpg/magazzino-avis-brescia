@@ -10,6 +10,7 @@ const VISTE_SOLO_RESPONSABILE = ["articoli", "categorie", "sezioni", "fornitori"
 function _aggiornaUI() {
   const loggato = !!window._stato.utente;
   document.getElementById("view-login").classList.toggle("attiva", !loggato);
+  document.getElementById("view-login").classList.toggle("nascosto", loggato);
   document.getElementById("app-shell").classList.toggle("nascosto", !loggato);
   if (!loggato) return;
 
@@ -24,7 +25,7 @@ function _aggiornaUI() {
     btn.classList.toggle("attivo", vista === window._stato.vistaAttiva);
   });
 
-  document.querySelectorAll(".view").forEach((el) => el.classList.remove("attiva"));
+  document.querySelectorAll("#app-shell .view").forEach((el) => el.classList.remove("attiva"));
   const viewEl = document.getElementById(`view-${window._stato.vistaAttiva}`);
   if (viewEl) viewEl.classList.add("attiva");
 

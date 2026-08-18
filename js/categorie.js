@@ -6,6 +6,7 @@ import {
   collection,
   doc,
   setDoc,
+  updateDoc,
   deleteDoc,
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
@@ -24,6 +25,10 @@ async function crea({ nome, prefisso }) {
   return ref.id;
 }
 
+async function modifica(id, campi) {
+  await updateDoc(doc(window._fb.db, "categorie", id), campi);
+}
+
 async function elimina(id) {
   // Nota: nessuna cascade-delete automatica sugli articoli esistenti
   // (REGOLA 5) — l'interfaccia deve impedire l'eliminazione di una categoria
@@ -32,4 +37,4 @@ async function elimina(id) {
   await deleteDoc(doc(window._fb.db, "categorie", id));
 }
 
-window._categorie = { elenco, crea, elimina };
+window._categorie = { elenco, crea, modifica, elimina };

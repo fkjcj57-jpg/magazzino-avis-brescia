@@ -59,6 +59,10 @@ async function annulla(richiestaId, motivo) {
   });
 }
 
+async function modifica(richiestaId, campi) {
+  await updateDoc(doc(window._fb.db, "richieste", richiestaId), campi);
+}
+
 async function inAttesa() {
   const tutte = await window._db.richieste.toArray();
   return tutte
@@ -71,4 +75,4 @@ async function storico() {
   return tutte.sort((a, b) => (a.data_richiesta < b.data_richiesta ? 1 : -1));
 }
 
-window._richieste = { crea, evadi, annulla, inAttesa, storico };
+window._richieste = { crea, evadi, annulla, modifica, inAttesa, storico };

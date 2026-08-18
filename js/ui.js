@@ -109,6 +109,7 @@ async function renderRichieste() {
       </div>
       <div style="display:flex;align-items:center;gap:8px">
         ${badgeStato[r.stato]}
+        <button class="icon-btn" onclick="apriModificaRichiesta('${r.id}')" aria-label="Modifica"><i class="ti ti-pencil"></i></button>
         <button class="btn btn-primario" onclick="apriEvasione('${r.id}')">Evadi</button>
       </div>
     </div>`;
@@ -148,6 +149,32 @@ async function salvaNuovaRichiesta() {
     articoloCodice: document.getElementById("nr-articolo").value,
     quantitaRichiesta: document.getElementById("nr-quantita").value,
     note: document.getElementById("nr-note").value,
+  });
+  cambiaVista("richieste");
+}
+
+async function apriModificaRichiesta(id) {
+  const r = await window._db.richieste.get(id);
+  const art = await window._db.articoli.get(r.articolo_codice);
+  document.getElementById("view-richieste").innerHTML = `
+    <div class="card">
+      <h2>Modifica richiesta</h2>
+      <p class="campo-help">${art?.descrizione || r.articolo_codice} — articolo e sezione non sono modificabili qui; se sono sbagliati, annulla la richiesta e creane una nuova.</p>
+      <label>Quantità richiesta</label>
+      <input type="number" id="mr-quantita" value="${r.quantita_richiesta}" min="${r.quantita_evasa || 0}">
+      <label>Note</label>
+      <textarea id="mr-note">${r.note || ""}</textarea>
+      <div class="griglia-2" style="margin-top:16px">
+        <button class="btn" onclick="cambiaVista('richieste')">Annulla</button>
+        <button class="btn btn-primario" onclick="salvaModificaRichiesta('${id}')">Salva</button>
+      </div>
+    </div>`;
+}
+
+async function salvaModificaRichiesta(id) {
+  await window._richieste.modifica(id, {
+    quantita_richiesta: Number(document.getElementById("mr-quantita").value),
+    note: document.getElementById("mr-note").value,
   });
   cambiaVista("richieste");
 }
@@ -293,6 +320,7 @@ async function renderArticoli() {
     return `<tr>
       <td>${a.codice}</td><td>${a.descrizione}</td><td>${g?.quantita ?? 0}</td>
       <td>${a.soglia_minima}</td><td>${a.incide_su_valore ? euro(g?.valore) : "—"}</td>
+      <td><button class="icon-btn" onclick="apriModificaArticolo('${a.codice}')" aria-label="Modifica"><i class="ti ti-pencil"></i></button></td>
     </tr>`;
   }));
 
@@ -300,7 +328,7 @@ async function renderArticoli() {
     <div class="flex-tra"><h1>Anagrafica articoli</h1><button class="btn btn-primario" onclick="apriNuovoArticolo()"><i class="ti ti-plus"></i>Nuovo</button></div>
     <div class="card" style="overflow-x:auto">
       <table class="tabella-dati">
-        <thead><tr><th>Codice</th><th>Descrizione</th><th>Giacenza</th><th>Soglia min.</th><th>Valore</th></tr></thead>
+        <thead><tr><th>Codice</th><th>Descrizione</th><th>Giacenza</th><th>Soglia min.</th><th>Valore</th><th></th></tr></thead>
         <tbody>${righe.join("")}</tbody>
       </table>
     </div>`;
@@ -396,6 +424,42 @@ async function salvaNuovoArticolo() {
   }
 }
 
+async function apriModificaArticolo(codice) {
+  const a = await window._db.articoli.get(codice);
+  document.getElementById("view-articoli").innerHTML = `
+    <div class="card">
+      <h2>Modifica articolo</h2>
+      <p class="campo-help">${a.codice} — il codice e la famiglia non sono modificabili.</p>
+      <label>Descrizione</label>
+      <input type="text" id="ma-descrizione" value="${a.descrizione}">
+      <label>Soglia minima</label>
+      <input type="number" id="ma-soglia" value="${a.soglia_minima}" min="0">
+      <label><input type="checkbox" id="ma-incide" ${a.incide_su_valore ? "checked" : ""} style="width:auto;display:inline-block;margin-right:6px">Incide sul valore di magazzino</label>
+      <div class="griglia-2" style="margin-top:16px">
+        <button class="btn" onclick="cambiaVista('articoli')">Annulla</button>
+        <button class="btn btn-primario" onclick="salvaModificaArticolo('${codice}')">Salva</button>
+      </div>
+      <button class="btn btn-testo btn-blocco" style="margin-top:8px;color:${a.attivo === false ? "var(--verde)" : "var(--rosso-alert)"}" onclick="toggleAttivoArticolo('${codice}', ${a.attivo !== false})">
+        ${a.attivo === false ? "Riattiva articolo" : "Disattiva articolo (non cancella lo storico)"}
+      </button>
+    </div>`;
+}
+
+async function salvaModificaArticolo(codice) {
+  await window._articoli.modificaArticolo(codice, {
+    descrizione: document.getElementById("ma-descrizione").value,
+    soglia_minima: Number(document.getElementById("ma-soglia").value) || 0,
+    incide_su_valore: document.getElementById("ma-incide").checked,
+  });
+  cambiaVista("articoli");
+}
+
+async function toggleAttivoArticolo(codice, attivoAdesso) {
+  if (attivoAdesso && !confirm("Disattivare questo articolo? Resterà nello storico ma non comparirà più nei nuovi movimenti/richieste.")) return;
+  await window._articoli.modificaArticolo(codice, { attivo: !attivoAdesso });
+  cambiaVista("articoli");
+}
+
 // ============================= SEZIONI =============================
 async function renderSezioni() {
   const el = document.getElementById("view-sezioni");
@@ -405,6 +469,7 @@ async function renderSezioni() {
     <div class="card">${sezioni.map((s) => `
       <div class="lista-riga">
         <div><div class="titolo">${s.nome}</div><div class="sottotitolo">${s.email || "nessuna email"} · ${s.telefono || ""}</div></div>
+        <button class="icon-btn" onclick="apriModificaSezione('${s.id}')" aria-label="Modifica"><i class="ti ti-pencil"></i></button>
       </div>`).join("") || '<div class="stato-vuoto">Nessuna sezione registrata.</div>'}
     </div>`;
 }
@@ -434,6 +499,32 @@ async function salvaNuovaSezione() {
   cambiaVista("sezioni");
 }
 
+async function apriModificaSezione(id) {
+  const s = await window._db.sezioni.get(id);
+  document.getElementById("view-sezioni").innerHTML = `
+    <div class="card">
+      <h2>Modifica sezione</h2>
+      <label>Nome</label><input type="text" id="ms-nome" value="${s.nome}">
+      <label>Email</label><input type="email" id="ms-email" value="${s.email || ""}">
+      <label>Telefono</label><input type="tel" id="ms-telefono" value="${s.telefono || ""}">
+      <label>Referente</label><input type="text" id="ms-referente" value="${s.referente || ""}">
+      <div class="griglia-2" style="margin-top:16px">
+        <button class="btn" onclick="cambiaVista('sezioni')">Annulla</button>
+        <button class="btn btn-primario" onclick="salvaModificaSezione('${id}')">Salva</button>
+      </div>
+    </div>`;
+}
+
+async function salvaModificaSezione(id) {
+  await window._sezioni.modifica(id, {
+    nome: document.getElementById("ms-nome").value,
+    email: document.getElementById("ms-email").value,
+    telefono: document.getElementById("ms-telefono").value,
+    referente: document.getElementById("ms-referente").value,
+  });
+  cambiaVista("sezioni");
+}
+
 // ============================= FORNITORI =============================
 async function renderFornitori() {
   const el = document.getElementById("view-fornitori");
@@ -443,6 +534,7 @@ async function renderFornitori() {
     <div class="card">${fornitori.map((f) => `
       <div class="lista-riga">
         <div><div class="titolo">${f.ragione_sociale}</div><div class="sottotitolo">${f.referente || ""} · ${f.email || ""} · ${f.telefono || ""}</div></div>
+        <button class="icon-btn" onclick="apriModificaFornitore('${f.id}')" aria-label="Modifica"><i class="ti ti-pencil"></i></button>
       </div>`).join("") || '<div class="stato-vuoto">Nessun fornitore registrato.</div>'}
     </div>`;
 }
@@ -474,6 +566,34 @@ async function salvaNuovoFornitore() {
   cambiaVista("fornitori");
 }
 
+async function apriModificaFornitore(id) {
+  const f = await window._db.fornitori.get(id);
+  document.getElementById("view-fornitori").innerHTML = `
+    <div class="card">
+      <h2>Modifica fornitore</h2>
+      <label>Ragione sociale</label><input type="text" id="mf-ragione" value="${f.ragione_sociale}">
+      <label>Referente</label><input type="text" id="mf-referente" value="${f.referente || ""}">
+      <label>Email</label><input type="email" id="mf-email" value="${f.email || ""}">
+      <label>Telefono</label><input type="tel" id="mf-telefono" value="${f.telefono || ""}">
+      <label>Note</label><textarea id="mf-note">${f.note || ""}</textarea>
+      <div class="griglia-2" style="margin-top:16px">
+        <button class="btn" onclick="cambiaVista('fornitori')">Annulla</button>
+        <button class="btn btn-primario" onclick="salvaModificaFornitore('${id}')">Salva</button>
+      </div>
+    </div>`;
+}
+
+async function salvaModificaFornitore(id) {
+  await window._fornitori.modifica(id, {
+    ragione_sociale: document.getElementById("mf-ragione").value,
+    referente: document.getElementById("mf-referente").value,
+    email: document.getElementById("mf-email").value,
+    telefono: document.getElementById("mf-telefono").value,
+    note: document.getElementById("mf-note").value,
+  });
+  cambiaVista("fornitori");
+}
+
 // ============================= CATEGORIE =============================
 async function renderCategorie() {
   const el = document.getElementById("view-categorie");
@@ -481,7 +601,10 @@ async function renderCategorie() {
   el.innerHTML = `
     <div class="flex-tra"><h1>Categorie</h1><button class="btn btn-primario" onclick="apriNuovaCategoria()"><i class="ti ti-plus"></i>Nuova</button></div>
     <div class="card">${categorie.map((c) => `
-      <div class="lista-riga"><div><div class="titolo">${c.nome}</div><div class="sottotitolo">Prefisso: ${c.prefisso}</div></div></div>
+      <div class="lista-riga">
+        <div><div class="titolo">${c.nome}</div><div class="sottotitolo">Prefisso: ${c.prefisso}</div></div>
+        <button class="icon-btn" onclick="apriModificaCategoria('${c.id}')" aria-label="Modifica"><i class="ti ti-pencil"></i></button>
+      </div>
     `).join("") || '<div class="stato-vuoto">Nessuna categoria. Creane una prima di aggiungere articoli.</div>'}
     </div>`;
 }
@@ -503,6 +626,29 @@ async function salvaNuovaCategoria() {
   await window._categorie.crea({
     nome: document.getElementById("nc-nome").value,
     prefisso: document.getElementById("nc-prefisso").value,
+  });
+  cambiaVista("categorie");
+}
+
+async function apriModificaCategoria(id) {
+  const c = await window._db.categorie.get(id);
+  document.getElementById("view-categorie").innerHTML = `
+    <div class="card">
+      <h2>Modifica categoria</h2>
+      <p class="campo-help">Attenzione: cambiare il prefisso non aggiorna i codici degli articoli già creati con quella categoria.</p>
+      <label>Nome</label><input type="text" id="mc-nome" value="${c.nome}">
+      <label>Prefisso codice</label><input type="text" id="mc-prefisso" value="${c.prefisso}" maxlength="5">
+      <div class="griglia-2" style="margin-top:16px">
+        <button class="btn" onclick="cambiaVista('categorie')">Annulla</button>
+        <button class="btn btn-primario" onclick="salvaModificaCategoria('${id}')">Salva</button>
+      </div>
+    </div>`;
+}
+
+async function salvaModificaCategoria(id) {
+  await window._categorie.modifica(id, {
+    nome: document.getElementById("mc-nome").value,
+    prefisso: document.getElementById("mc-prefisso").value.toUpperCase(),
   });
   cambiaVista("categorie");
 }
@@ -627,12 +773,48 @@ async function renderStorico() {
     return `<div class="lista-riga">
       <div>
         <div class="titolo">${m.tipo === "CARICO" ? "Carico" : "Scarico"} · ${art?.descrizione || m.articolo_codice}</div>
-        <div class="sottotitolo">${dataBreve(m.data)} · ${m.quantita} pz${m.omaggio ? " · omaggio" : ""}</div>
+        <div class="sottotitolo">${dataBreve(m.data)} · ${m.quantita} pz${m.omaggio ? " · omaggio" : ""}${m.tipo === "CARICO" && m.prezzo_unitario ? ` · ${euro(m.prezzo_unitario)}/pz` : ""}</div>
       </div>
-      ${puoModificare ? `<button class="icon-btn" onclick="eliminaMovimento('${m.id}')" aria-label="Elimina"><i class="ti ti-trash"></i></button>` : ""}
+      ${puoModificare ? `
+        <div style="display:flex;gap:4px">
+          <button class="icon-btn" onclick="apriModificaMovimento('${m.id}')" aria-label="Modifica"><i class="ti ti-pencil"></i></button>
+          <button class="icon-btn" onclick="eliminaMovimento('${m.id}')" aria-label="Elimina"><i class="ti ti-trash"></i></button>
+        </div>` : ""}
     </div>`;
   }));
   el.innerHTML = `<h1>Storico movimenti</h1><div class="card">${righe.join("") || '<div class="stato-vuoto">Nessun movimento registrato.</div>'}</div>`;
+}
+
+async function apriModificaMovimento(id) {
+  const m = await window._db.movimenti.get(id);
+  const art = await window._db.articoli.get(m.articolo_codice);
+  const campiExtra = m.tipo === "CARICO"
+    ? `<label>Prezzo unitario di questo lotto</label><input type="number" id="mm-prezzo" min="0" step="0.001" value="${m.prezzo_unitario ?? ""}">`
+    : `<label>Note</label><textarea id="mm-note">${m.note || ""}</textarea>`;
+
+  document.getElementById("view-storico").innerHTML = `
+    <div class="card">
+      <h2>Modifica movimento</h2>
+      <p class="campo-help">${m.tipo === "CARICO" ? "Carico" : "Scarico"} · ${art?.descrizione || m.articolo_codice}</p>
+      <label>Quantità</label>
+      <input type="number" id="mm-quantita" value="${m.quantita}" min="1">
+      ${campiExtra}
+      <div class="griglia-2" style="margin-top:16px">
+        <button class="btn" onclick="cambiaVista('storico')">Annulla</button>
+        <button class="btn btn-primario" onclick="salvaModificaMovimento('${id}', '${m.tipo}')">Salva</button>
+      </div>
+    </div>`;
+}
+
+async function salvaModificaMovimento(id, tipo) {
+  const campi = { quantita: Number(document.getElementById("mm-quantita").value) };
+  if (tipo === "CARICO") {
+    campi.prezzo_unitario = Number(document.getElementById("mm-prezzo").value) || 0;
+  } else {
+    campi.note = document.getElementById("mm-note").value;
+  }
+  await window._movimenti.modifica(id, campi);
+  cambiaVista("storico");
 }
 
 async function eliminaMovimento(id) {
@@ -745,11 +927,14 @@ const RENDER = {
 Object.assign(window, {
   _aggiornaUI, cambiaVista,
   apriNuovaRichiesta, salvaNuovaRichiesta, apriEvasione, confermaEvasione,
+  apriModificaRichiesta, salvaModificaRichiesta,
   aggiornaFormMovimento, salvaMovimento,
+  apriModificaMovimento, salvaModificaMovimento,
   apriNuovoArticolo, toggleFamigliaEsistente, aggiornaAnteprimaCodice, salvaNuovoArticolo,
-  apriNuovaCategoria, salvaNuovaCategoria,
-  apriNuovaSezione, salvaNuovaSezione,
-  apriNuovoFornitore, salvaNuovoFornitore,
+  apriModificaArticolo, salvaModificaArticolo, toggleAttivoArticolo,
+  apriNuovaCategoria, salvaNuovaCategoria, apriModificaCategoria, salvaModificaCategoria,
+  apriNuovaSezione, salvaNuovaSezione, apriModificaSezione, salvaModificaSezione,
+  apriNuovoFornitore, salvaNuovoFornitore, apriModificaFornitore, salvaModificaFornitore,
   apriNuovoUtente, salvaNuovoUtente, rimuoviAccessoUtente, salvaCambioPassword, richiediReset,
   eliminaMovimento, esportaBackup,
   anteprimaImport, confermaImport,

@@ -314,24 +314,58 @@ async function salvaMovimento() {
 // ============================= ARTICOLI (anagrafica) =============================
 async function renderArticoli() {
   const el = document.getElementById("view-articoli");
-  const articoli = await window._articoli.elenco();
-  const righe = await Promise.all(articoli.map(async (a) => {
-    const g = await window._db.giacenze.get(a.codice);
-    return `<tr>
-      <td>${a.codice}</td><td>${a.descrizione}</td><td>${g?.quantita ?? 0}</td>
-      <td>${a.soglia_minima}</td><td>${a.incide_su_valore ? euro(g?.valore) : "—"}</td>
-      <td><button class="icon-btn" onclick="apriModificaArticolo('${a.codice}')" aria-label="Modifica"><i class="ti ti-pencil"></i></button></td>
-    </tr>`;
-  }));
+  const [articoli, categorie] = await Promise.all([window._articoli.elenco(), window._categorie.elenco()]);
+
+  const gruppi = new Map();
+  [...categorie].sort((a, b) => a.nome.localeCompare(b.nome))
+    .forEach((c) => gruppi.set(c.id, { nome: c.nome, articoli: [] }));
+
+  const senzaCategoria = { nome: "Senza categoria", articoli: [] };
+  for (const a of articoli) {
+    const g = gruppi.get(a.categoria_id);
+    (g || senzaCategoria).articoli.push(a);
+  }
+
+  const sezioni = [];
+  for (const g of gruppi.values()) {
+    if (g.articoli.length) sezioni.push(await renderSezioneCategoria(g));
+  }
+  if (senzaCategoria.articoli.length) sezioni.push(await renderSezioneCategoria(senzaCategoria));
 
   el.innerHTML = `
     <div class="flex-tra"><h1>Anagrafica articoli</h1><button class="btn btn-primario" onclick="apriNuovoArticolo()"><i class="ti ti-plus"></i>Nuovo</button></div>
-    <div class="card" style="overflow-x:auto">
-      <table class="tabella-dati">
-        <thead><tr><th>Codice</th><th>Descrizione</th><th>Giacenza</th><th>Soglia min.</th><th>Valore</th><th></th></tr></thead>
-        <tbody>${righe.join("")}</tbody>
-      </table>
-    </div>`;
+    ${sezioni.join("") || '<div class="card"><div class="stato-vuoto">Nessun articolo registrato.</div></div>'}
+  `;
+}
+
+async function renderSezioneCategoria(gruppo) {
+  const righe = await Promise.all(
+    [...gruppo.articoli].sort((a, b) => a.descrizione.localeCompare(b.descrizione)).map(async (a) => {
+      const g = await window._db.giacenze.get(a.codice);
+      return `<tr>
+        <td>${a.codice}</td>
+        <td>${a.descrizione}${a.variante ? ` <span class="badge badge-annullata">${a.variante}</span>` : ""}</td>
+        <td>${g?.quantita ?? 0}</td>
+        <td>${a.soglia_minima}</td>
+        <td>${a.incide_su_valore ? euro(g?.valore) : "—"}</td>
+        <td><button class="icon-btn" onclick="apriModificaArticolo('${a.codice}')" aria-label="Modifica"><i class="ti ti-pencil"></i></button></td>
+      </tr>`;
+    })
+  );
+
+  return `
+    <details class="card categoria-articoli" open>
+      <summary>
+        <span><i class="ti ti-chevron-right chevron"></i>${gruppo.nome}</span>
+        <span class="badge badge-annullata">${gruppo.articoli.length}</span>
+      </summary>
+      <div style="overflow-x:auto;margin-top:12px">
+        <table class="tabella-dati">
+          <thead><tr><th>Codice</th><th>Descrizione</th><th>Giacenza</th><th>Soglia min.</th><th>Valore</th><th></th></tr></thead>
+          <tbody>${righe.join("")}</tbody>
+        </table>
+      </div>
+    </details>`;
 }
 
 async function apriNuovoArticolo() {

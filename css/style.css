@@ -324,3 +324,22 @@ table.tabella-dati td { padding: 8px; border-bottom: 1px solid var(--bordo); }
 @media (max-width: 759px) {
   #app-sidebar .sidebar-logo { display: none; }
 }
+/* --- Sezioni categoria (accordion) nell'anagrafica articoli --- */
+details.categoria-articoli summary {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 600;
+  font-size: 1rem;
+  list-style: none;
+}
+details.categoria-articoli summary::-webkit-details-marker { display: none; }
+details.categoria-articoli summary .chevron {
+  margin-right: 8px;
+  font-size: 16px;
+  color: var(--testo-secondario);
+  transition: transform .15s;
+  display: inline-block;
+}
+details.categoria-articoli[open] summary .chevron { transform: rotate(90deg); }

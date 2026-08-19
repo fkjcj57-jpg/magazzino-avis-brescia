@@ -204,13 +204,12 @@ async function renderRichieste() {
   }));
 
   el.innerHTML = `
-    <div class="flex-tra"><h1>Richieste</h1><button class="btn btn-primario" onclick="apriNuovaRichiesta()"><i class="ti ti-plus"></i>Nuova</button></div>
+    <div class="flex-tra"><h1>Richieste</h1><button class="btn btn-primario" onclick="()"><i class="ti ti-plus"></i>Nuova</button></div>
     <div class="card">${righe.join("") || '<div class="stato-vuoto"><i class="ti ti-inbox"></i>Nessuna richiesta aperta.</div>'}</div>
   `;
 }
 
 async function apriNuovaRichiesta() {
-  async function apriNuovaRichiesta() {
   const sezioni = await window._sezioni.elenco();
   const articoli = await window._articoli.elenco();
   const categorie = await window._categorie.elenco();

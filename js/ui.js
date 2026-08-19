@@ -47,7 +47,95 @@ const badgeStato = {
   evasa_parziale: '<span class="badge badge-parziale">parziale</span>',
   annullata: '<span class="badge badge-annullata">annullata</span>',
 };
+// --- Selettore articolo con ricerca live, raggruppato per categoria ---
+// Riutilizzabile ovunque serva scegliere un articolo (Nuova richiesta,
+// Nuovo movimento...): un campo di testo che filtra mentre si digita.
+window.__selettori = {};
 
+function raggruppaArticoliPerCategoria(articoli, categorie) {
+  const mappaCategorie = new Map(categorie.map((c) => [c.id, c.nome]));
+  const gruppi = new Map();
+  for (const a of articoli) {
+    const nomeCat = mappaCategorie.get(a.categoria_id) || "Senza categoria";
+    if (!gruppi.has(nomeCat)) gruppi.set(nomeCat, []);
+    gruppi.get(nomeCat).push(a);
+  }
+  return [...gruppi.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([nome, elenco]) => ({
+      nome,
+      articoli: elenco.sort((a, b) => a.descrizione.localeCompare(b.descrizione)),
+    }));
+}
+
+function html_selettoreArticolo(prefix, placeholder = "Cerca per nome o codice...") {
+  return `
+    <div class="selettore-articolo">
+      <input type="text" id="${prefix}-cerca" placeholder="${placeholder}" autocomplete="off"
+        onfocus="apriSelettoreArticolo('${prefix}')"
+        oninput="filtraSelettoreArticolo('${prefix}')"
+        onblur="chiudiSelettoreArticolo('${prefix}')">
+      <input type="hidden" id="${prefix}-valore">
+      <div id="${prefix}-risultati" class="selettore-risultati nascosto"></div>
+    </div>`;
+}
+
+function inizializzaSelettoreArticolo(prefix, articoli, categorie, valoreIniziale) {
+  window.__selettori[prefix] = { articoli, categorie };
+  if (valoreIniziale) {
+    const art = articoli.find((a) => a.codice === valoreIniziale);
+    if (art) {
+      document.getElementById(`${prefix}-cerca`).value = `${art.descrizione}${art.variante ? " " + art.variante : ""}`;
+      document.getElementById(`${prefix}-valore`).value = art.codice;
+    }
+  }
+}
+
+function apriSelettoreArticolo(prefix) {
+  filtraSelettoreArticolo(prefix);
+}
+
+function filtraSelettoreArticolo(prefix) {
+  const { articoli, categorie } = window.__selettori[prefix];
+  const testo = document.getElementById(`${prefix}-cerca`).value.trim().toLowerCase();
+  const filtrati = testo
+    ? articoli.filter((a) =>
+        a.descrizione.toLowerCase().includes(testo) ||
+        a.codice.toLowerCase().includes(testo) ||
+        (a.variante || "").toLowerCase().includes(testo)
+      )
+    : articoli;
+
+  const gruppi = raggruppaArticoliPerCategoria(filtrati, categorie);
+  const risultati = document.getElementById(`${prefix}-risultati`);
+
+  risultati.innerHTML = gruppi.length
+    ? gruppi.map((g) => `
+        <div class="selettore-gruppo">${g.nome}</div>
+        ${g.articoli.map((a) => `
+          <div class="selettore-voce" onmousedown="selezionaArticoloSelettore('${prefix}', '${a.codice}')">
+            <span>${a.descrizione}${a.variante ? ` <span class="badge badge-annullata">${a.variante}</span>` : ""}</span>
+            <span class="sottotitolo">${a.codice}</span>
+          </div>`).join("")}
+      `).join("")
+    : '<div class="selettore-vuoto">Nessun articolo trovato.</div>';
+
+  risultati.classList.remove("nascosto");
+}
+
+function selezionaArticoloSelettore(prefix, codice) {
+  const { articoli } = window.__selettori[prefix];
+  const art = articoli.find((a) => a.codice === codice);
+  document.getElementById(`${prefix}-cerca`).value = `${art.descrizione}${art.variante ? " " + art.variante : ""}`;
+  document.getElementById(`${prefix}-valore`).value = codice;
+  document.getElementById(`${prefix}-risultati`).classList.add("nascosto");
+}
+
+function chiudiSelettoreArticolo(prefix) {
+  setTimeout(() => {
+    document.getElementById(`${prefix}-risultati`)?.classList.add("nascosto");
+  }, 150);
+}
 // ============================= CRUSCOTTO =============================
 async function renderCruscotto() {
   const el = document.getElementById("view-cruscotto");
@@ -122,15 +210,17 @@ async function renderRichieste() {
 }
 
 async function apriNuovaRichiesta() {
+  async function apriNuovaRichiesta() {
   const sezioni = await window._sezioni.elenco();
   const articoli = await window._articoli.elenco();
+  const categorie = await window._categorie.elenco();
   const html = `
     <div class="card">
       <h2>Nuova richiesta</h2>
       <label>Sezione</label>
       <select id="nr-sezione">${sezioni.map((s) => `<option value="${s.id}">${s.nome}</option>`).join("")}</select>
       <label>Articolo</label>
-      <select id="nr-articolo">${articoli.map((a) => `<option value="${a.codice}">${a.descrizione} (${a.codice})</option>`).join("")}</select>
+      ${html_selettoreArticolo("nr-articolo")}
       <label>Quantità richiesta</label>
       <input type="number" id="nr-quantita" min="1" value="1">
       <label>Note</label>
@@ -141,12 +231,15 @@ async function apriNuovaRichiesta() {
       </div>
     </div>`;
   document.getElementById("view-richieste").innerHTML = html;
+  inizializzaSelettoreArticolo("nr-articolo", articoli, categorie);
 }
 
 async function salvaNuovaRichiesta() {
+  const articoloCodice = document.getElementById("nr-articolo-valore").value;
+  if (!articoloCodice) { alert("Seleziona un articolo dall'elenco."); return; }
   await window._richieste.crea({
     sezioneId: document.getElementById("nr-sezione").value,
-    articoloCodice: document.getElementById("nr-articolo").value,
+    articoloCodice,
     quantitaRichiesta: document.getElementById("nr-quantita").value,
     note: document.getElementById("nr-note").value,
   });
@@ -236,6 +329,7 @@ async function confermaEvasione(richiestaId) {
 async function renderMovimento() {
   const el = document.getElementById("view-movimento");
   const articoli = await window._articoli.elenco();
+  const categorie = await window._categorie.elenco();
   const fornitori = await window._fornitori.elenco();
   const sezioni = await window._sezioni.elenco();
 
@@ -248,7 +342,7 @@ async function renderMovimento() {
         <option value="SCARICO">Scarico diretto (evento, progetto scuola, altro)</option>
       </select>
       <label>Articolo</label>
-      <select id="mv-articolo">${articoli.map((a) => `<option value="${a.codice}">${a.descrizione} (${a.codice})</option>`).join("")}</select>
+      ${html_selettoreArticolo("mv-articolo")}
       <label>Quantità</label>
       <input type="number" id="mv-quantita" min="1" value="1">
       <div id="mv-campi-extra"></div>
@@ -257,6 +351,7 @@ async function renderMovimento() {
 
   window.__movFornitori = fornitori;
   window.__movSezioni = sezioni;
+  inizializzaSelettoreArticolo("mv-articolo", articoli, categorie);
   aggiornaFormMovimento();
 }
 
@@ -286,7 +381,8 @@ function aggiornaFormMovimento() {
 
 async function salvaMovimento() {
   const tipo = document.getElementById("mv-tipo").value;
-  const articoloCodice = document.getElementById("mv-articolo").value;
+  const articoloCodice = document.getElementById("mv-articolo-valore").value;
+  if (!articoloCodice) { alert("Seleziona un articolo dall'elenco."); return; }
   const quantita = Number(document.getElementById("mv-quantita").value);
 
   if (tipo === "CARICO") {
@@ -961,6 +1057,7 @@ const RENDER = {
 Object.assign(window, {
   _aggiornaUI, cambiaVista,
   apriNuovaRichiesta, salvaNuovaRichiesta, apriEvasione, confermaEvasione,
+  apriSelettoreArticolo, filtraSelettoreArticolo, selezionaArticoloSelettore, chiudiSelettoreArticolo,
   apriModificaRichiesta, salvaModificaRichiesta,
   aggiornaFormMovimento, salvaMovimento,
   apriModificaMovimento, salvaModificaMovimento,

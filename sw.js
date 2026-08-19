@@ -3,7 +3,7 @@
 // REGOLA VINCOLANTE 1: incrementare CACHE_NAME ad ogni deploy che modifica
 // HTML/JS/CSS, altrimenti gli utenti restano bloccati su versioni obsolete.
 // Formato consigliato: "magazzino-avis-vN" con N incrementale.
-const CACHE_NAME = "magazzino-avis-v16";
+const CACHE_NAME = "magazzino-avis-v17";
 
 // REGOLA VINCOLANTE 2: percorsi sempre relativi ("./"), mai assoluti,
 // perché l'app vive in una sottocartella di GitHub Pages (/nome-repo/).

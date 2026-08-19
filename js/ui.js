@@ -354,7 +354,7 @@ async function renderSezioneCategoria(gruppo) {
   );
 
   return `
-  <details class="card categoria-articoli">
+      <details class="card categoria-articoli">
       <summary>
         <span><i class="ti ti-chevron-right chevron"></i>${gruppo.nome}</span>
         <span class="badge badge-annullata">${gruppo.articoli.length}</span>

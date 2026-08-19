@@ -67,9 +67,9 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(req.url);
   const isAppShell = url.origin === self.location.origin;
 
-  if (isAppShell) {
+   if (isAppShell) {
     event.respondWith(
-      fetch(req)
+      fetch(req, { cache: "no-store" })
         .then((res) => {
           const resClone = res.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(req, resClone));

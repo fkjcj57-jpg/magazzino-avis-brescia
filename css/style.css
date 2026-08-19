@@ -343,3 +343,38 @@ details.categoria-articoli summary .chevron {
   display: inline-block;
 }
 details.categoria-articoli[open] summary .chevron { transform: rotate(90deg); }
+
+/* --- Selettore articolo con ricerca live --- */
+.selettore-articolo { position: relative; }
+.selettore-risultati {
+  position: absolute;
+  left: 0; right: 0; top: calc(100% + 4px);
+  max-height: 280px;
+  overflow-y: auto;
+  background: var(--superficie);
+  border: 1px solid var(--bordo-forte);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 4px 16px rgba(35, 33, 29, .14);
+  z-index: 40;
+}
+.selettore-gruppo {
+  position: sticky;
+  top: 0;
+  background: var(--superficie-2);
+  color: var(--testo-secondario);
+  font-size: .7rem;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  padding: 6px 12px;
+}
+.selettore-voce {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 9px 12px;
+  cursor: pointer;
+  gap: 8px;
+}
+.selettore-voce:hover { background: var(--superficie-2); }
+.selettore-voce .sottotitolo { font-size: .75rem; color: var(--testo-secondario); flex-shrink: 0; }
+.selettore-vuoto { padding: 14px; text-align: center; color: var(--testo-secondario); font-size: .85rem; }
